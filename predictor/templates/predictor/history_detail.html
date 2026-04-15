@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ analysis.name }} — FinSight Pro{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:60px;max-width:860px;">
+  <div style="margin-bottom:24px;">
+    <a href="{% url 'history' %}" style="color:var(--text-2);text-decoration:none;font-size:0.85rem;">← History</a>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;">
+    <div>
+      <h1 style="font-size:1.4rem;font-weight:700;">{{ analysis.name }}</h1>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+        <span class="badge
+          {% if analysis.analysis_type == 'breakeven' %}badge-blue
+          {% elif analysis.analysis_type == 'forecast' %}badge-green
+          {% elif analysis.analysis_type == 'npv' %}badge-purple
+          {% elif analysis.analysis_type == 'monte_carlo' %}badge-orange
+          {% else %}badge-blue{% endif %}">
+          {{ analysis.get_analysis_type_display }}
+        </span>
+        <span style="font-size:0.8rem;color:var(--text-2);">{{ analysis.created_at|date:"M d, Y — g:i A" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <div class="card-title">Input Parameters</div>
+    </div>
+    <pre style="font-family:var(--mono);font-size:0.78rem;color:var(--text-2);overflow-x:auto;white-space:pre-wrap;">{{ analysis.input_data|pprint }}</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Results (JSON)</div>
+    </div>
+    <pre style="font-family:var(--mono);font-size:0.78rem;color:var(--green);overflow-x:auto;white-space:pre-wrap;">{{ analysis.result_data|pprint }}</pre>
+  </div>
+</div>
+{% endblock %}

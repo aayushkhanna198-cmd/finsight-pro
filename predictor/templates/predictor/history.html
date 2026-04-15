@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}History — FinSight Pro{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:60px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+    <div>
+      <h1 style="font-size:1.4rem;font-weight:700;">Analysis History</h1>
+      <p style="color:var(--text-2);font-size:0.875rem;margin-top:4px;">All your past analyses</p>
+    </div>
+    <a href="{% url 'analysis' %}" class="btn btn-primary">+ New Analysis</a>
+  </div>
+
+  {% if analyses %}
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in analyses %}
+          <tr>
+            <td class="label">{{ a.name }}</td>
+            <td>
+              <span class="badge
+                {% if a.analysis_type == 'breakeven' %}badge-blue
+                {% elif a.analysis_type == 'forecast' %}badge-green
+                {% elif a.analysis_type == 'npv' %}badge-purple
+                {% elif a.analysis_type == 'monte_carlo' %}badge-orange
+                {% else %}badge-blue{% endif %}">
+                {{ a.get_analysis_type_display }}
+              </span>
+            </td>
+            <td style="color:var(--text-2);">{{ a.created_at|date:"M d, Y — g:i A" }}</td>
+            <td><a href="{% url 'history_detail' a.pk %}" class="btn btn-ghost btn-sm">View →</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <p style="margin-bottom:12px;color:var(--text-1);font-size:1rem;font-weight:600;">No analyses yet</p>
+    <p>Run your first analysis to see it here.</p>
+    <a href="{% url 'analysis' %}" class="btn btn-primary" style="margin-top:20px;">Run Analysis</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

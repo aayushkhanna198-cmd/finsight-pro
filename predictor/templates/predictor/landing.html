@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}FinSight Pro — Financial Forecasting Platform{% endblock %}
+
+{% block extra_head %}
+<style>
+  .hero {
+    min-height: calc(100vh - 56px);
+    display: flex; align-items: center;
+    padding: 80px 0;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(88,166,255,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 30% 60%, rgba(210,168,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 60px; align-items: center;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent-dim); color: var(--accent);
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 3rem; font-weight: 700; line-height: 1.15;
+    color: var(--text-1); margin-bottom: 20px;
+  }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p { font-size: 1rem; color: var(--text-2); line-height: 1.7; margin-bottom: 32px; }
+  .hero-actions { display: flex; gap: 12px; align-items: center; }
+  .hero-stats { display: flex; gap: 28px; margin-top: 48px; }
+  .hero-stat { }
+  .hero-stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text-1); font-family: var(--mono); }
+  .hero-stat-lbl { font-size: 0.75rem; color: var(--text-2); margin-top: 2px; }
+
+  /* Dashboard mockup */
+  .mockup {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  .mockup-bar {
+    display: flex; gap: 6px; margin-bottom: 12px;
+  }
+  .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mockup-row {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px;
+  }
+  .mockup-card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .mockup-lbl { font-size: 8px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .mockup-val { font-size: 16px; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+  .mockup-chart-area {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px; height: 90px;
+    display: flex; align-items: flex-end; gap: 4px;
+  }
+  .mockup-bar-item {
+    flex: 1; border-radius: 3px 3px 0 0;
+    transition: opacity 0.3s;
+  }
+
+  /* Features */
+  .features { padding: 100px 0; }
+  .feature-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 48px; }
+  .feature-card {
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: var(--border-hi); }
+  .feature-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 16px;
+  }
+  .feature-card h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+  .feature-card p { font-size: 0.82rem; color: var(--text-2); line-height: 1.6; }
+
+  /* Methods section */
+  .methods { padding: 80px 0; border-top: 1px solid var(--border); }
+  .method-list { margin-top: 40px; }
+  .method-item {
+    display: grid; grid-template-columns: 280px 1fr;
+    gap: 32px; padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .method-item:first-child { border-top: 1px solid var(--border); }
+  .method-num { font-size: 0.75rem; color: var(--text-3); font-family: var(--mono); margin-bottom: 6px; }
+  .method-name { font-size: 1rem; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+  .method-tag-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .method-desc { font-size: 0.85rem; color: var(--text-2); line-height: 1.7; }
+  .method-formula {
+    margin-top: 10px; padding: 8px 12px;
+    background: var(--bg-base); border: 1px solid var(--border);
+    border-radius: var(--radius); font-family: var(--mono);
+    font-size: 0.78rem; color: var(--purple);
+  }
+
+  /* CTA */
+  .cta { padding: 100px 0; text-align: center; }
+  .cta h2 { font-size: 2rem; font-weight: 700; margin-bottom: 16px; }
+  .cta p { color: var(--text-2); font-size: 0.95rem; margin-bottom: 32px; }
+
+  @media(max-width:768px) {
+    .hero-grid, .feature-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
+    .mockup { display: none; }
+    .method-item { grid-template-columns: 1fr; gap: 12px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-tag">✦ Numerical Methods + Financial Analytics</div>
+        <h1>Predict. Analyze.<br><span class="accent">Decide with data.</span></h1>
+        <p>FinSight Pro applies rigorous numerical methods — Bisection, Newton-Raphson, regression, Monte Carlo — to real financial problems. Break-even analysis, NPV, IRR, revenue forecasting — all in one platform.</p>
+        <div class="hero-actions">
+          <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Start for free</a>
+          <a href="{% url 'login' %}" class="btn btn-secondary btn-lg">Sign in</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-val">6+</div>
+            <div class="hero-stat-lbl">Numerical methods</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val">10K</div>
+            <div class="hero-stat-lbl">Monte Carlo runs</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val">R²</div>
+            <div class="hero-stat-lbl">Regression accuracy</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Mockup -->
+      <div class="mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dot" style="background:#f85149"></div>
+          <div class="mockup-dot" style="background:#ffa657"></div>
+          <div class="mockup-dot" style="background:#3fb950"></div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-card">
+            <div class="mockup-lbl">Break-Even</div>
+            <div class="mockup-val" style="color:var(--accent)">25.00</div>
+          </div>
+          <div class="mockup-card">
+            <div class="mockup-lbl">NPV</div>
+            <div class="mockup-val" style="color:var(--green)">$312</div>
+          </div>
+          <div class="mockup-card">
+            <div class="mockup-lbl">IRR</div>
+            <div class="mockup-val" style="color:var(--purple)">18.4%</div>
+          </div>
+        </div>
+        <div class="mockup-chart-area">
+          {% for h in "3050658090607080" %}
+          <div class="mockup-bar-item" style="height:{{ h }}%;background:linear-gradient(to top,var(--accent-dim),var(--accent));opacity:0.8;"></div>
+          {% endfor %}
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;align-items:center;">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div>
+          <span style="font-size:10px;color:var(--text-2);">Analysis running — Newton-Raphson converged in 4 iterations</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="features">
+  <div class="container">
+    <div class="section-title" style="font-size:1.4rem;">Everything you need for financial modeling</div>
+    <div class="section-subtitle">From root-finding to stochastic simulation — professional tools for serious analysis.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--accent-dim);">⚡</div>
+        <h3>Break-Even Analysis</h3>
+        <p>Find profit zero-crossings using both Bisection and Newton-Raphson methods. Visualize profit/loss zones with iteration tables.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--green-dim);">📈</div>
+        <h3>Revenue Forecasting</h3>
+        <p>Linear and polynomial regression with R² accuracy metrics. Forecast next 3 periods with confidence from your historical data.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--purple-dim);">💰</div>
+        <h3>NPV & IRR</h3>
+        <p>Net Present Value with period-by-period breakdown. Internal Rate of Return via Newton-Raphson on the NPV function.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--orange-dim);">🎲</div>
+        <h3>Monte Carlo Simulation</h3>
+        <p>10,000-path stochastic revenue simulation. Percentile fan charts (5th–95th) for risk quantification under uncertainty.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--red-dim);">🔒</div>
+        <h3>Secure Auth System</h3>
+        <p>Full user registration and login. All analyses saved to your personal history with JSON export capability.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:var(--accent-dim);">📊</div>
+        <h3>Dark Charts</h3>
+        <p>Professional dark-theme matplotlib charts — waterfall diagrams, trend lines, Monte Carlo fans — embedded in results.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Methods -->
+<div class="methods">
+  <div class="container">
+    <div class="section-title" style="font-size:1.4rem;">Numerical methods, explained</div>
+    <div class="section-subtitle">Every technique has a mathematical foundation. Here's what powers the engine.</div>
+    <div class="method-list">
+      <div class="method-item">
+        <div>
+          <div class="method-num">METHOD 01</div>
+          <div class="method-name">Bisection Method</div>
+          <div class="method-tag-row">
+            <span class="method-tag">Root-finding</span>
+            <span class="method-tag">O(log n)</span>
+          </div>
+        </div>
+        <div>
+          <div class="method-desc">Divides an interval [a, b] repeatedly, halving the search space each iteration. Guaranteed to converge when f(a)·f(b) &lt; 0. Used to find break-even points where Profit(x) = 0.</div>
+          <div class="method-formula">c = (a + b) / 2  →  shrink interval containing root</div>
+        </div>
+      </div>
+      <div class="method-item">
+        <div>
+          <div class="method-num">METHOD 02</div>
+          <div class="method-name">Newton-Raphson</div>
+          <div class="method-tag-row">
+            <span class="method-tag">Root-finding</span>
+            <span class="method-tag">Quadratic convergence</span>
+          </div>
+        </div>
+        <div>
+          <div class="method-desc">Uses the tangent line at each iterate to find the next approximation. Quadratically faster than Bisection — errors roughly square at each step. Requires f'(x) ≠ 0.</div>
+          <div class="method-formula">x_{n+1} = x_n - f(x_n) / f'(x_n)</div>
+        </div>
+      </div>
+      <div class="method-item">
+        <div>
+          <div class="method-num">METHOD 03</div>
+          <div class="method-name">Linear Regression</div>
+          <div class="method-tag-row">
+            <span class="method-tag">Least squares</span>
+            <span class="method-tag">Forecasting</span>
+          </div>
+        </div>
+        <div>
+          <div class="method-desc">Fits y = mx + b to minimize sum of squared residuals. R² measures goodness of fit (1.0 = perfect). Used for revenue trend detection and multi-period forecasting.</div>
+          <div class="method-formula">m = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)</div>
+        </div>
+      </div>
+      <div class="method-item">
+        <div>
+          <div class="method-num">METHOD 04</div>
+          <div class="method-name">NPV / IRR</div>
+          <div class="method-tag-row">
+            <span class="method-tag">Discounted cash flow</span>
+            <span class="method-tag">Investment</span>
+          </div>
+        </div>
+        <div>
+          <div class="method-desc">Net Present Value discounts future cash flows to today's value. IRR finds the rate that makes NPV = 0, solved via Newton-Raphson on the NPV function itself.</div>
+          <div class="method-formula">NPV = Σ [ C_t / (1 + r)^t ]    for t = 0..n</div>
+        </div>
+      </div>
+      <div class="method-item">
+        <div>
+          <div class="method-num">METHOD 05</div>
+          <div class="method-name">Monte Carlo</div>
+          <div class="method-tag-row">
+            <span class="method-tag">Stochastic</span>
+            <span class="method-tag">Risk modeling</span>
+          </div>
+        </div>
+        <div>
+          <div class="method-desc">Simulates 10,000 revenue paths by drawing random growth rates from N(μ, σ) at each period. Produces percentile bands showing the range of possible outcomes under uncertainty.</div>
+          <div class="method-formula">R_t = R_{t-1} · (1 + N(μ, σ))</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <div class="container">
+    <h2>Ready to run your first analysis?</h2>
+    <p>Free to use. No credit card required. Built with Django + NumPy.</p>
+    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Create free account →</a>
+  </div>
+</div>
+
+<style>
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+{% endblock %}

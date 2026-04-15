@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FinSight Pro{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px; padding-bottom:60px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;">
+    <div>
+      <h1 style="font-size:1.5rem;font-weight:700;">Good to see you, {{ user.first_name|default:user.username }} 👋</h1>
+      <p style="color:var(--text-2);margin-top:4px;font-size:0.875rem;">Your financial analysis workspace.</p>
+    </div>
+    <a href="{% url 'analysis' %}" class="btn btn-primary">
+      + New Analysis
+    </a>
+  </div>
+
+  <!-- Stats row -->
+  <div class="grid-4" style="margin-bottom:28px;">
+    <div class="stat-card">
+      <div class="stat-label">Total Analyses</div>
+      <div class="stat-value" style="color:var(--accent);">{{ total_analyses }}</div>
+      <div class="stat-delta up">↑ All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Methods Available</div>
+      <div class="stat-value">6</div>
+      <div class="stat-delta" style="color:var(--text-2);">Numerical + statistical</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Monte Carlo Paths</div>
+      <div class="stat-value" style="color:var(--purple);">10K</div>
+      <div class="stat-delta" style="color:var(--text-2);">Per simulation run</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Forecast Horizon</div>
+      <div class="stat-value" style="color:var(--green);">3</div>
+      <div class="stat-delta" style="color:var(--text-2);">Periods ahead</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;">
+
+    <!-- Recent History -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Recent Analyses</div>
+          <div class="card-subtitle">Your last 5 runs</div>
+        </div>
+        <a href="{% url 'history' %}" class="btn btn-ghost btn-sm">View all →</a>
+      </div>
+
+      {% if history %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in history %}
+            <tr>
+              <td class="label">{{ a.name }}</td>
+              <td>
+                <span class="badge
+                  {% if a.analysis_type == 'breakeven' %}badge-blue
+                  {% elif a.analysis_type == 'forecast' %}badge-green
+                  {% elif a.analysis_type == 'npv' %}badge-purple
+                  {% elif a.analysis_type == 'monte_carlo' %}badge-orange
+                  {% else %}badge-blue{% endif %}">
+                  {{ a.get_analysis_type_display }}
+                </span>
+              </td>
+              <td style="color:var(--text-2);">{{ a.created_at|date:"M d, Y" }}</td>
+              <td><a href="{% url 'history_detail' a.pk %}" class="btn btn-ghost btn-sm">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <p>No analyses yet. <a href="{% url 'analysis' %}" style="color:var(--accent);">Run your first one →</a></p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Start Panel -->
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title">Quick Actions</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a href="{% url 'analysis' %}?type=breakeven" class="btn btn-secondary" style="justify-content:flex-start;gap:10px;">
+            <span style="color:var(--accent);">⚡</span> Break-Even Analysis
+          </a>
+          <a href="{% url 'analysis' %}?type=forecast" class="btn btn-secondary" style="justify-content:flex-start;gap:10px;">
+            <span style="color:var(--green);">📈</span> Revenue Forecast
+          </a>
+          <a href="{% url 'analysis' %}?type=npv" class="btn btn-secondary" style="justify-content:flex-start;gap:10px;">
+            <span style="color:var(--purple);">💰</span> NPV / IRR
+          </a>
+          <a href="{% url 'analysis' %}?type=monte_carlo" class="btn btn-secondary" style="justify-content:flex-start;gap:10px;">
+            <span style="color:var(--orange);">🎲</span> Monte Carlo
+          </a>
+          <a href="{% url 'analysis' %}?type=all" class="btn btn-primary" style="justify-content:flex-start;gap:10px;">
+            ✦ Full Suite
+          </a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Methods Reference</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          {% for method, formula in methods %}
+          <div style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:0;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-1);margin-bottom:3px;">{{ method }}</div>
+            <div style="font-size:0.72rem;font-family:var(--mono);color:var(--purple);">{{ formula }}</div>
+          </div>
+          {% empty %}
+          <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-1);margin-bottom:3px;">Bisection</div>
+            <div style="font-size:0.72rem;font-family:var(--mono);color:var(--purple);">c = (a + b) / 2</div>
+          </div>
+          <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-1);margin-bottom:3px;">Newton-Raphson</div>
+            <div style="font-size:0.72rem;font-family:var(--mono);color:var(--purple);">x = x - f(x)/f'(x)</div>
+          </div>
+          <div style="border-bottom:1px solid var(--border);padding-bottom:8px;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-1);margin-bottom:3px;">NPV</div>
+            <div style="font-size:0.72rem;font-family:var(--mono);color:var(--purple);">Σ Cₜ / (1+r)ᵗ</div>
+          </div>
+          <div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-1);margin-bottom:3px;">Monte Carlo</div>
+            <div style="font-size:0.72rem;font-family:var(--mono);color:var(--purple);">Rₜ = Rₜ₋₁·(1 + N(μ,σ))</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Sign In — FinSight Pro{% endblock %}
+
+{% block extra_head %}
+<style>
+  .auth-page { min-height: calc(100vh - 56px); display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+  .auth-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 16px; padding: 36px 40px; width: 100%; max-width: 400px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;margin:0 auto 14px;">FS</div>
+      <div style="font-size:1.4rem;font-weight:700;">Welcome back</div>
+      <div style="font-size:0.85rem;color:var(--text-2);margin-top:4px;">Sign in to your FinSight account</div>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" autofocus required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;margin-top:4px;">Sign in</button>
+    </form>
+
+    <p style="text-align:center;margin-top:20px;font-size:0.85rem;color:var(--text-2);">
+      Don't have an account? <a href="{% url 'register' %}" style="color:var(--accent);">Create one free</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

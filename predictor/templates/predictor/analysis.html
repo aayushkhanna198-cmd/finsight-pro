@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+{% block title %}Analysis — FinSight Pro{% endblock %}
+
+{% block extra_head %}
+<style>
+  .analysis-layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; padding: 32px 0 60px; }
+  .sticky-panel { position: sticky; top: 72px; }
+  @media(max-width:900px) { .analysis-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="analysis-layout">
+
+  <!-- LEFT: Input Form -->
+  <div class="sticky-panel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Configure Analysis</div>
+          <div class="card-subtitle">Set your parameters and run</div>
+        </div>
+      </div>
+
+      <form method="POST" id="analysis-form">
+        {% csrf_token %}
+        
+        <!-- Analysis Type -->
+        <div class="form-group">
+          <label class="form-label">Analysis Type</label>
+          <select name="analysis_type" id="analysis_type" class="form-control" onchange="updateFields()">
+            <option value="breakeven">⚡ Break-Even Analysis</option>
+            <option value="forecast">📈 Revenue Forecast</option>
+            <option value="npv">💰 NPV / IRR Analysis</option>
+            <option value="monte_carlo">🎲 Monte Carlo Simulation</option>
+            <option value="all">✦ Full Suite (All Methods)</option>
+          </select>
+        </div>
+
+        <!-- Analysis Name -->
+        <div class="form-group">
+          <label class="form-label">Analysis Name</label>
+          <input type="text" name="analysis_name" class="form-control" value="My Analysis" placeholder="e.g. Q4 Revenue Forecast">
+        </div>
+
+        <hr class="divider">
+
+        <!-- Revenue Data (for forecast / all) -->
+        <div id="fields-revenue" class="fields-group">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Revenue Data</div>
+          <div class="form-group">
+            <label class="form-label">Periods (x)</label>
+            <input type="text" name="x_data_raw" class="form-control mono" value="1,2,3,4,5" placeholder="1,2,3,4,5">
+            <div class="form-hint">Comma-separated period numbers</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Revenue (y)</label>
+            <input type="text" name="y_data_raw" class="form-control mono" value="100,150,200,260,300" placeholder="100,150,200,260,300">
+            <div class="form-hint">Comma-separated values</div>
+          </div>
+        </div>
+
+        <!-- NPV Data -->
+        <div id="fields-npv" class="fields-group" style="display:none;">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Investment Data</div>
+          <div class="form-group">
+            <label class="form-label">Discount Rate</label>
+            <input type="number" name="discount_rate" class="form-control" value="0.10" step="0.01" min="0" max="1">
+            <div class="form-hint">e.g. 0.10 = 10%</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cash Flows</label>
+            <input type="text" name="cashflows_raw" class="form-control mono" value="-1000,300,400,500,600" placeholder="-1000,300,400,500">
+            <div class="form-hint">Negative = initial investment</div>
+          </div>
+        </div>
+
+        <!-- Monte Carlo Data -->
+        <div id="fields-mc" class="fields-group" style="display:none;">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Simulation Parameters</div>
+          <div class="form-group">
+            <label class="form-label">Base Revenue</label>
+            <input type="number" name="base_revenue" class="form-control" value="1000000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mean Growth Rate (μ)</label>
+            <input type="number" name="growth_mean" class="form-control" value="0.08" step="0.01">
+            <div class="form-hint">e.g. 0.08 = 8% average growth</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Std Deviation (σ)</label>
+            <input type="number" name="growth_std" class="form-control" value="0.05" step="0.01">
+            <div class="form-hint">Higher = more uncertainty</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" id="run-btn">
+          <span id="btn-text">▶ Run Analysis</span>
+          <div class="spinner" id="btn-spinner" style="display:none;"></div>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div>
+    {% if error %}
+    <div class="alert alert-error">⚠ {{ error }}</div>
+    {% endif %}
+
+    {% if not results %}
+    <div class="empty-state" style="padding:100px 20px;">
+      <div class="empty-icon">⚗</div>
+      <p style="font-size:1rem;font-weight:600;color:var(--text-1);margin-bottom:8px;">Configure and run an analysis</p>
+      <p>Set your parameters on the left and click <strong>Run Analysis</strong>.</p>
+    </div>
+    {% endif %}
+
+    {% if results %}
+    <!-- ── Break-Even Results ── -->
+    {% if results.bisection %}
+    <div class="result-block" style="margin-bottom:20px;">
+      <div class="result-title">
+        <span style="background:var(--accent-dim);color:var(--accent);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">01</span>
+        Break-Even Analysis
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="stat-card">
+          <div class="stat-label">Bisection Root</div>
+          <div class="result-value" style="font-size:1.5rem;">{{ results.bisection.root }}</div>
+          <div class="result-meta">{{ results.bisection.iterations }} iterations · <span class="{% if results.bisection.converged %}converged{% else %}diverged{% endif %}">{% if results.bisection.converged %}✓ Converged{% else %}✗ Not converged{% endif %}</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Newton-Raphson Root</div>
+          <div class="result-value" style="font-size:1.5rem;">{{ results.newton.root }}</div>
+          <div class="result-meta">{{ results.newton.iterations }} iterations · <span class="{% if results.newton.converged %}converged{% else %}diverged{% endif %}">{% if results.newton.converged %}✓ Converged{% else %}✗ Not converged{% endif %}</span></div>
+        </div>
+      </div>
+
+      <!-- Bisection Table -->
+      <div class="tabs" id="tabs-breakeven">
+        <button class="tab active" data-tab="bisect-table">Bisection Table</button>
+        <button class="tab" data-tab="newton-table">Newton-Raphson Table</button>
+      </div>
+      <div data-content="bisect-table" class="tab-content active">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>n</th><th>a</th><th>b</th><th>c</th><th>f(c)</th><th>Error</th></tr></thead>
+            <tbody>
+              {% for row in results.bisection.table %}
+              <tr>
+                <td>{{ row.n }}</td>
+                <td>{{ row.a }}</td>
+                <td>{{ row.b }}</td>
+                <td style="color:var(--accent)">{{ row.c }}</td>
+                <td>{{ row.f_c }}</td>
+                <td style="color:var(--text-2)">{{ row.error }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div data-content="newton-table" class="tab-content">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>n</th><th>xₙ</th><th>f(xₙ)</th><th>f'(xₙ)</th><th>xₙ₊₁</th><th>Error</th></tr></thead>
+            <tbody>
+              {% for row in results.newton.table %}
+              <tr>
+                <td>{{ row.n }}</td>
+                <td>{{ row.x_n }}</td>
+                <td>{{ row.f_xn }}</td>
+                <td>{{ row.df_xn }}</td>
+                <td style="color:var(--accent)">{{ row.x_new }}</td>
+                <td style="color:var(--text-2)">{{ row.error }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if charts.breakeven %}
+      <div style="margin-top:16px;">
+        <img src="data:image/png;base64,{{ charts.breakeven }}" class="chart-img" alt="Break-Even Chart">
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── Regression Results ── -->
+    {% if results.regression %}
+    <div class="result-block" style="margin-bottom:20px;">
+      <div class="result-title">
+        <span style="background:var(--green-dim);color:var(--green);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">02</span>
+        Revenue Forecast — Linear Regression
+      </div>
+
+      <div class="grid-3" style="margin-bottom:16px;">
+        <div class="stat-card">
+          <div class="stat-label">Equation</div>
+          <div style="font-size:1rem;font-weight:600;font-family:var(--mono);color:var(--green);margin-top:4px;">{{ results.regression.equation }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">R² Score</div>
+          <div class="result-value" style="font-size:1.5rem;color:var(--green);">{{ results.regression.r_squared }}</div>
+          <div class="result-meta">Goodness of fit</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Next Period Forecast</div>
+          <div class="result-value" style="font-size:1.5rem;color:var(--accent);">{{ results.regression.predictions.0.1 }}</div>
+        </div>
+      </div>
+
+      <!-- Forecast table -->
+      <div class="table-wrap" style="margin-bottom:16px;">
+        <table>
+          <thead><tr><th>Period</th><th>Predicted Revenue</th></tr></thead>
+          <tbody>
+            {% for period, value in results.regression.predictions %}
+            <tr>
+              <td class="label">Period {{ period }}</td>
+              <td style="color:var(--accent);">{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if charts.regression %}
+      <img src="data:image/png;base64,{{ charts.regression }}" class="chart-img" alt="Revenue Trend Chart">
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── NPV Results ── -->
+    {% if results.npv %}
+    <div class="result-block" style="margin-bottom:20px;">
+      <div class="result-title">
+        <span style="background:var(--purple-dim);color:var(--purple);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">03</span>
+        NPV / IRR Analysis
+      </div>
+
+      <div class="grid-3" style="margin-bottom:16px;">
+        <div class="stat-card">
+          <div class="stat-label">Net Present Value</div>
+          <div class="result-value" style="font-size:1.5rem;color:{% if results.npv.npv >= 0 %}var(--green){% else %}var(--red){% endif %};">
+            ${{ results.npv.npv|floatformat:2 }}
+          </div>
+          <div class="result-meta">
+            <span class="badge {% if results.npv.npv >= 0 %}badge-green{% else %}badge-red{% endif %}">
+              {{ results.npv.decision }}
+            </span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Internal Rate of Return</div>
+          <div class="result-value" style="font-size:1.5rem;color:var(--purple);">{{ results.irr }}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Payback Period</div>
+          <div class="result-value" style="font-size:1.5rem;color:var(--orange);">
+            {% if results.payback %}{{ results.payback }} yrs{% else %}Never{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- NPV Breakdown -->
+      <div class="table-wrap" style="margin-bottom:16px;">
+        <table>
+          <thead><tr><th>Period</th><th>Cash Flow</th><th>Discount Factor</th><th>Present Value</th></tr></thead>
+          <tbody>
+            {% for row in results.npv.breakdown %}
+            <tr>
+              <td class="label">t = {{ row.period }}</td>
+              <td class="{% if row.cashflow >= 0 %}positive{% else %}negative{% endif %}">
+                ${{ row.cashflow|floatformat:0 }}
+              </td>
+              <td>{{ row.discount_factor }}</td>
+              <td class="{% if row.present_value >= 0 %}positive{% else %}negative{% endif %}">
+                ${{ row.present_value|floatformat:2 }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if charts.npv %}
+      <img src="data:image/png;base64,{{ charts.npv }}" class="chart-img" alt="NPV Chart">
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── Monte Carlo Results ── -->
+    {% if results.monte_carlo %}
+    <div class="result-block">
+      <div class="result-title">
+        <span style="background:var(--orange-dim);color:var(--orange);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;">04</span>
+        Monte Carlo Simulation
+      </div>
+
+      <div class="grid-3" style="margin-bottom:16px;">
+        <div class="stat-card">
+          <div class="stat-label">Expected Final Revenue</div>
+          <div class="result-value" style="font-size:1.2rem;color:var(--accent);">${{ results.monte_carlo.expected_final|floatformat:0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Std Deviation</div>
+          <div class="result-value" style="font-size:1.2rem;color:var(--orange);">${{ results.monte_carlo.std_final|floatformat:0 }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Simulations</div>
+          <div class="result-value" style="font-size:1.2rem;">{{ results.monte_carlo.simulations|floatformat:0 }}</div>
+        </div>
+      </div>
+
+      {% if charts.monte_carlo %}
+      <img src="data:image/png;base64,{{ charts.monte_carlo }}" class="chart-img" alt="Monte Carlo Chart">
+      {% endif %}
+
+      <!-- Percentile table -->
+      <div class="table-wrap" style="margin-top:16px;">
+        <table>
+          <thead><tr><th>Percentile</th>{% for p in results.monte_carlo.periods %}<th>Period {{ p }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for label, key in pct_rows %}
+            <tr>
+              <td class="label">{{ label }}</td>
+              {% for v in results.monte_carlo.percentiles|get_item:key %}
+              <td>${{ v|floatformat:0 }}</td>
+              {% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td class="label">Median (50th)</td>
+              {% for v in results.monte_carlo.percentiles.p50 %}<td>${{ v|floatformat:0 }}</td>{% endfor %}
+            </tr>
+            <tr><td class="label">Optimistic (95th)</td>
+              {% for v in results.monte_carlo.percentiles.p95 %}<td>${{ v|floatformat:0 }}</td>{% endfor %}
+            </tr>
+            <tr><td class="label">Pessimistic (5th)</td>
+              {% for v in results.monte_carlo.percentiles.p5 %}<td>${{ v|floatformat:0 }}</td>{% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endif %}{# end if results #}
+  </div>
+
+</div><!-- analysis-layout -->
+</div><!-- container -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function updateFields() {
+    const t = document.getElementById('analysis_type').value;
+    document.getElementById('fields-revenue').style.display =
+      (t === 'forecast' || t === 'all') ? '' : 'none';
+    document.getElementById('fields-npv').style.display =
+      (t === 'npv' || t === 'all') ? '' : 'none';
+    document.getElementById('fields-mc').style.display =
+      (t === 'monte_carlo' || t === 'all') ? '' : 'none';
+  }
+
+  document.getElementById('analysis-form').addEventListener('submit', () => {
+    document.getElementById('btn-text').textContent = 'Running…';
+    document.getElementById('btn-spinner').style.display = '';
+    document.getElementById('run-btn').disabled = true;
+  });
+
+  // Set initial state
+  const urlType = new URLSearchParams(window.location.search).get('type');
+  if (urlType) {
+    const sel = document.getElementById('analysis_type');
+    if ([...sel.options].some(o => o.value === urlType)) sel.value = urlType;
+  }
+  updateFields();
+</script>
+{% endblock %}
